@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang=""><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Allsky projections rendering on GPU (using ray-tracing)</title>
+    <meta name="description" content="A space where I talk about my projects.">
+    <meta name="author" content='Matthieu Baumann'>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous">
+
+    
+    <link rel="stylesheet" href="/sass/researcher.min.css">
+
+    
+        <link rel="icon" type="image/ico" href="favicon.ico">
+    
+
+    
+        
+    
+</head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js" integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js" integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "\\[", right: "\\]", display: true},
+                {left: "$", right: "$", display: false},
+                {left: "\\(", right: "\\)", display: false}
+            ]
+        });
+    });
+</script>
+
+    <body><div class="container mt-5">
+    <nav class="navbar navbar-expand-sm flex-column flex-sm-row text-nowrap p-0">
+        <a class="navbar-brand mx-0 mr-sm-auto" href="" title="Welcome to my blog space">
+          
+          Welcome to my blog space
+        </a>
+        <div class="navbar-nav flex-row flex-wrap justify-content-center">
+            
+                
+                
+                    <a class="nav-item nav-link" href="/posts" title="Posts">
+                        Posts
+                    </a>
+                    
+                        <span class="nav-item navbar-text mx-1">/</span>
+                    
+                
+                    <a class="nav-item nav-link" href="./resume.pdf" title="Resume">
+                        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-file-earmark-person-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M2 2a2 2 0 0 1 2-2h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm7.5 1.5v-2l3 3h-2a1 1 0 0 1-1-1zM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm2 5.755S12 12 8 12s-5 1.755-5 1.755V14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-.245z"/></svg> Resume
+                    </a>
+                    
+                        <span class="nav-item navbar-text mx-1">/</span>
+                    
+                
+                    <a class="nav-item nav-link" href="/contact" title="Contact">
+                        Contact
+                    </a>
+                    
+                
+            
+        </div>
+    </nav>
+</div>
+<hr>
+<div id="content" style="text-align: justify">
+<div class="container" style="text-align: justify">
+    <h1 id="allsky-projections-rendering-on-gpu-using-ray-tracing">Allsky Projections Rendering on GPU (using Ray-tracing)</h1>
+<p>Hi folks,</p>
+<p>This is my first article. I wanted to write something about non-linear (allsky) projection rendering using WebGPU (or your favorite rasterizer).</p>
+<h2 id="what-are-allsky-projections-">What are Allsky Projections ?</h2>
+<p>The classical &ldquo;perspective&rdquo; projection is by far the most commonly used type of projection in computer graphics (games, movies, computer vision, &hellip;). It is nowadays defined in a lot of linear algebra libraries.
+This projection imitates what a camera or the eyes are doing. We will not talk about this one in this article.</p>
+<p>What I want to talk with you about is: <em>allsky projections rendering</em>.</p>
+<p>So what is this beast ?</p>
+<p>Looking at a sphere with your eyes, you should be able to see only the half of it, the other half remaining unknown.
+On the opposite, there are projections, i.e. the mercator projection, that can project the whole sphere onto your 2D screen, allowing you to see it entirely! This is why these projections are said &ldquo;allsky&rdquo;: with just a look, you see the full surface of the sphere, every longitudes and latitudes of it.</p>
+<p>These projections are very useful to visualize revolutionary objects such as spheres, cones or cylinders. They are used in astronomy to represent the sky from the earth point of view (i.e. a sphere).</p>
+<p>Many allsky projections exist, each having their own properties. The most of them have been designed for a specific scientific use case.
+If you are curious about map projections, wikipedia has a <a href="https://en.wikipedia.org/wiki/List_of_map_projections">page</a> where you will find a plenty of very strange ones!</p>
+<h2 id="rendering-a-textured-sphere">Rendering a Textured Sphere</h2>
+<p>Mapping a texture on a sphere is not so simple. You will always find some distortions either around the poles or near the equator. This is an active research subject. A lot of mathematical tesselations of the sphere have been defined.</p>
+<p>In astronomy, we are using the <a href="https://en.wikipedia.org/wiki/HEALPix">HEALPix</a> tesselation. HEALPix stands for: Hierarchical Equal Area isoLatitude Pixelisation. HEALPix has, like many sphere tesselation, pros and cons.
+Before explaining what they are. Let me explain what this tesselation consists of.</p>
+<p>The HEALPix tesselation is perfectly hierarchical. At level 0, the sphere is divided in 12 equal area base cells.
+At level one, each of the 12 base cells are divided into 4 new ones which are also equal-area sized. This leads to 48 cells at level 1.</p>
+<p>
+  <figure>
+    <img src="/HEALPix.png" alt="HEALPix tesselation through levels">
+    <figcaption align = "center">HEALPix tesselation illustration. Top-left: level 0, Top-right: level 1, Bottom-right: level 2, Bottom-left: level 3</figcaption>
+  </figure>
+</p>
+<p>More generally, for a given level $N$, the number of equal area cells is $N_{pix} = 12 \times 4^N$</p>
+<p>One difficulty of the HEALPix tesselation is that the cell frontiers are not great arcs, i.e.
+they cannot be contained in a plane passing by the center of the sphere. Therefore HEALPix is not straightforward to implement. Another problem is that cells around the pole are quite distorted as you can see in the image above. You will also find some cells that do have only 7 neighbors instead of 8.</p>
+<p>To conclude, the HEALPix has interesting features:</p>
+<ul>
+<li>It is hierarchical. A parent cell divides into four children. They are fully contained in the parent and the union of them gives the parent cell. Some tesselation does not satisfy this property.</li>
+<li>For a given level, all the cells have the same area.</li>
+</ul>
+<p>These two features combined makes HEALPix very interesting for storing image tiles. Aladin and its web app counterpart called Aladin Lite are satellite image viewers. They use equal sized ($512 \times 512$) tile images mapped to HEALPix cells for each level $N \in \mathcal{N}$.
+When the user is zooming and moving, the tile images corresponding to the HEALPix cells inside the screen are downloaded and rendered.</p>
+<h3 id="why-does-the-traditional-rendering-approach-leads-to-issues-">Why does the Traditional Rendering Approach leads to Issues ?</h3>
+<p>The standard way of rendering a sphere would be to project the vertices of each triangles (two per HEALPix cells).</p>
+<p>This can be done in the vertex shader for example.
+If we do that, once projected, the triangles located at the border of the view will cross the whole screen. We will end up with one vertex in the left of the screen while the two other will remain in the right side of the screen.</p>
+<p>
+  <figure>
+    <img src="/triangles_crossing_projection.png" alt="Some triangles at the border are crossing the screen when projected">
+    <figcaption align = "center">Some triangles at the border are crossing the screen when projected</figcaption>
+  </figure>
+</p>
+<p>This is something that can be handled (with difficulty but it can). Here is how:</p>
+<p>At each frame we need to discard the triangles crossing the projection. You can spot the triangles by looking if the projected vertices are given in the opposite direction of the other triangle vertices (in the counterclockwise order instead of clockwise).</p>
+<p>Maybe this can be done in a specific step of the rendering pipeline. Or you can simply do it on the CPU side and update the vertex buffer at each frame:</p>
+<ol>
+<li>I did not investigate the first solution but it may use some recent shader programming features. This can be problematic if you want to make things cross compatible with old computers or for the web (using WebGL for example).</li>
+<li>The latter one is CPU intensive. It requires to do the projection of all the triangles on the CPU side in order to discard the rendering of some of them. And we need to do that whenever the user moves&hellip;</li>
+</ol>
+<p>While this may be handled, you will not have perfect projection borders as some triangles will be discarded&hellip;</p>
+<p>We need to consider another approach&hellip;</p>
+<h3 id="considering-the-problem-the-other-way">Considering the Problem the Other Way</h3>
+<p>How to solve the problem then ?</p>
+<p>A better approach is to consider the problem in the opposite way. Instead of defining your 3D vertices and projecting them to your screen, why not define the 2D footprint of your projection and &ldquo;un&quot;project the 2D screen pixels to get their 3D corresponding coordinates?</p>
+<p>You can:</p>
+<ol>
+<li>Unproject your 2D screen triangle vertices in the VS (Vertex Shader)</li>
+<li>Give the resulting 3D vertices to the FS (Fragment Shader). Then in your FS, each fragment will have an interpolated 3D coord computed from the 3 vertices of the triangle containing it.</li>
+</ol>
+<p>This approach will result in distortions especially within big and thin long triangles. At the border, the derivatives of the projections in each directions are usually big. This results to distortions when using linear interpolation.</p>
+<h3 id="precompute-the-position-for-each-pixel">Precompute the Position for each Pixel</h3>
+<p>A better approach would be to precompute the unprojection of each fragment!
+As an example, a texture can store for each 2D pixel a RGB color representing what are the 3D coordinates corresponding to that pixel.</p>
+<p>Here are some position textures computed for different allsky projections. Take a pixel, its RGB color corresponds to the XYZ coordinates of the vertex located on the sphere.</p>
+<p>
+  <figure>
+    <img src="/output.png" alt="Precomputed textures for 6 different projections. In the first row from left to right: Aitoff, Orthographic, Mercator. On the second row: Mollweide, Azimuthal and Gnomonic">
+    <figcaption align = "center">Precomputed textures for 6 different projections. In the first row from left to right: Aitoff, Orthographic, Mercator. In the second row: Mollweide, Azimuthal and Gnomonic</figcaption>
+  </figure>
+</p>
+<h3 id="the-algorithm-found-in-the-fragment-shader">The Algorithm Found in the Fragment Shader</h3>
+<p>From the 2D <strong>screen space</strong> pixel $p_{ss} \in [-1, 1]^{2}$:</p>
+<ol>
+<li>Map $p_{ss}$ to $[0, 1]^{2}$. $p_{ss} = 0.5 \times p_{ss} + 0.5$</li>
+<li>Perform the unprojection by retrieving the pixel color from the position texture: $p_{ws} = \mathcal{f}_{proj}^{-1}(p_{ss})$. $p_{ws}$ lies on the sphere. Its coordinates are expressed in **world space**.</li>
+<li>Apply a rotation to that point: $p_{ws} = R \times p_{ws}$, where $R$ is the rotation matrix of the sphere.</li>
+<li>Retrieve the HEALPix cell where the vertex is located: $H_{idx}, d_x, d_y = xyz2pix(p_{ws})$ where $d_x, d_y \in [0, 1]$ and $H_{idx} \in (0, 1, &hellip;, 11)$. $d_x$ and $d_y$ refer to the location offset within the HEALPix cell index $H_{idx}$ containing $p_{ws}$.</li>
+<li>Retrieve the color of $p_{ws}$</li>
+</ol>
+<p>I created an image with the 12 base HEALPix tile images (e.g. at level 0) of the <a href="https://en.wikipedia.org/wiki/Digitized_Sky_Survey">DSS sky survey</a>. The 12 tiles are concatenated together horizontally. Download it to see it in fullsize.</p>
+<p>
+  <figure>
+    <img src="/map.png" alt="12 base HEALPix cell tile images of the DSS sky survey">
+    <figcaption align = "center">12 base HEALPix cell tile images of the DSS sky survey</figcaption>
+  </figure>
+</p>
+<p>The $uv$ position of $p_{ws}$ within that texture is therefore: $uv = (\frac{H_{idx} + d_x}{12}, d_y)^T \in [0, 1]^2$</p>
+<p>Here is the full code of the fragment shader in GLSL:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-glsl" data-lang="glsl"><span style="color:#75715e">#version 300 es</span>
+
+<span style="color:#75715e">// The position in the projected clipping space (2D coords) coming from the VS</span>
+<span style="color:#66d9ef">in</span> <span style="color:#66d9ef">vec2</span> p_ss;
+<span style="color:#75715e">// The output color of the fragment</span>
+<span style="color:#66d9ef">out</span> <span style="color:#66d9ef">vec4</span> color;
+
+<span style="color:#66d9ef">uniform</span> <span style="color:#66d9ef">sampler2D</span> pos_tex; <span style="color:#75715e">// The texture storing the XYZ positions for every screen pixels</span>
+<span style="color:#66d9ef">uniform</span> <span style="color:#66d9ef">sampler2D</span> tiles_tex; <span style="color:#75715e">// Image tiles of the 12 base HEALPix cells concatenated</span>
+
+<span style="color:#66d9ef">uniform</span> mat4 R; <span style="color:#75715e">// The rotation matrix of the sphere</span>
+
+<span style="color:#66d9ef">vec4</span> get_color(<span style="color:#66d9ef">vec3</span> pos_ws) {
+    <span style="color:#75715e">// 4.</span>
+    <span style="color:#75715e">// hash_with_dxdy omitted. This returns the HEALPix cell containing</span>
+    <span style="color:#75715e">// pos_ws. You can inspect the code in https://github.com/bmatthieu3/wgpu-sky-rendering</span>
+    <span style="color:#75715e">// for more details.</span>
+    HashDxDy hdxdy <span style="color:#f92672">=</span> hash_with_dxdy(<span style="color:#ae81ff">0</span>, pos_ws);
+    <span style="color:#66d9ef">float</span> idx <span style="color:#f92672">=</span> <span style="color:#66d9ef">float</span>(hdxdy.idx);
+    <span style="color:#75715e">// remap dx and dy computed from hash_with_dxdy</span>
+    <span style="color:#66d9ef">vec2</span> d <span style="color:#f92672">=</span> <span style="color:#66d9ef">vec2</span>(hdxdy.dy, hdxdy.dx);
+
+    <span style="color:#75715e">// 5.</span>
+    <span style="color:#66d9ef">vec2</span> uv <span style="color:#f92672">=</span> <span style="color:#66d9ef">vec2</span>((idx <span style="color:#f92672">+</span> d.x)<span style="color:#f92672">/</span><span style="color:#ae81ff">12.0</span>, d.y);
+    <span style="color:#66d9ef">return</span> texture(tiles_tex, uv);
+}
+
+<span style="color:#66d9ef">void</span> main() {
+    <span style="color:#75715e">// 1.</span>
+    <span style="color:#75715e">// Transform the clip space position from [-1, 1] to [0, 1.0]</span>
+    <span style="color:#66d9ef">vec2</span> uv <span style="color:#f92672">=</span> pos_ss <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.5</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.5</span>;
+    <span style="color:#75715e">// 2.</span>
+    <span style="color:#75715e">// Perform the unprojection by sampling the texture.</span>
+    <span style="color:#75715e">// We get a world space position</span>
+    <span style="color:#66d9ef">vec3</span> pos_ws <span style="color:#f92672">=</span> texture(pos_tex, uv).rgb;
+
+    <span style="color:#75715e">// 3.</span>
+    <span style="color:#75715e">// Apply to it the rotation matrix of the sphere.</span>
+    <span style="color:#66d9ef">vec3</span> pos_ws <span style="color:#f92672">=</span> <span style="color:#66d9ef">vec3</span>(R <span style="color:#f92672">*</span> <span style="color:#66d9ef">vec4</span>(pos_ws, <span style="color:#ae81ff">1.0</span>));
+
+    <span style="color:#75715e">// 4. and 5. inside get_color</span>
+    color <span style="color:#f92672">=</span> get_color(frag_pos);
+}
+</code></pre></div><p>And the result:
+
+  <figure>
+    <img src="/screenshot.png" alt="Aitoff projection rendering of the DSS">
+    <figcaption align = "center">Aitoff projection rendering of the DSS</figcaption>
+  </figure>
+</p>
+<h3 id="test-it">Test it</h3>
+<h4 id="webgpu-implementation">WebGPU implementation</h4>
+<p>All the source code using <a href="https://wgpu.rs/">wpgu-rs</a> can be found on my <a href="https://github.com/bmatthieu3/wgpu-sky-rendering">github</a>.
+To test it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># Clone the repo</span>
+$ git clone https://github.com/bmatthieu3/wgpu-sky-rendering.git
+$ cd wgpu-sky-rendering
+
+<span style="color:#75715e"># Compile</span>
+$ cargo build --release
+
+<span style="color:#75715e"># Run</span>
+$ cargo run --release
+</code></pre></div><h4 id="aladin-lite">Aladin Lite</h4>
+<p>There is also a WebGL2 implementation of this rendering process included into the Aladin Lite rendering engine. It can be tested (with the WebGL2 experimental feature enabled on your browser) <a href="https://bmatthieu3.github.io/hips_webgl_renderer/index.html">here</a>.</p>
+<p>This version does not do the unprojection for every pixel so it has some distortion effects on the border of the projections. This has been fixed in the current <a href="https://github.com/cds-astro/aladin-lite/tree/develop">code</a>.</p>
+<h3 id="questions-">Questions ?</h3>
+<p>If you have questions or remarks on how to improve the algorithm please email me: <a href="mailto:baumannmatthieu0@gmail.com">baumannmatthieu0@gmail.com</a>.</p>
+<p>You can also push an issue and contribute on the <a href="https://github.com/bmatthieu3/wgpu-sky-rendering">wgpu-sky-renderer</a> or <a href="https://github.com/cds-astro/aladin-lite/tree/develop">aladin-lite</a> repositories.</p>
+
+</div>
+
+        </div><div id="footer" class="mb-5">
+    <hr>
+    <div class="container text-center">
+        
+            <a href="mailto:baumannmatthieu0@gmail.com" class="fas fa-envelope" title="E-mail"></a>
+        
+            <a href="https://github.com/bmatthieu3" class="fab fa-github" title="Github"></a>
+        
+            <a href="https://www.linkedin.com/in/matthieu-baumann-978255114/" class="fab fa-linkedin" title="Linkedin"></a>
+        
+            <a href="https://twitter.com/BAUMANNMatthie1" class="fab fa-twitter" title="Twitter"></a>
+        
+    </div>
+    
+        <div class="container text-center">
+            <a href="https://github.com/bmatthieu3" title="By Matthieu Baumann"><small>By Matthieu Baumann</small></a>
+        </div>
+    
+</div>
+</body>
+</html>

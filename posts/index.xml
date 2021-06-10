@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Welcome to my blog space</title>
+    <link>/posts/</link>
+    <description>Recent content in Posts on Welcome to my blog space</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Allsky projections rendering on GPU (using ray-tracing)</title>
+      <link>/posts/allskyrendering/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/allskyrendering/</guid>
+      <description>Allsky Projections Rendering on GPU (using Ray-tracing) Hi folks,
+This is my first article. I wanted to write something about non-linear (allsky) projection rendering using WebGPU (or your favorite rasterizer).
+What are Allsky Projections ? The classical &amp;ldquo;perspective&amp;rdquo; projection is by far the most commonly used type of projection in computer graphics (games, movies, computer vision, &amp;hellip;). It is nowadays defined in a lot of linear algebra libraries. This projection imitates what a camera or the eyes are doing.</description>
+    </item>
+    
+  </channel>
+</rss>
